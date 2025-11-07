@@ -6,14 +6,24 @@ export default function GamePage() {
   const [room, setRoom] = useState<any>(null);
   const [me, setMe] = useState<any>(null);
 
+  const roomId = "room1"; // <- sesuaikan dengan room yang ada
+  const adminName = "Admin"; // nama unik untuk admin
+
   useEffect(() => {
+    // 🚀 ini penting: admin ikut join agar dapat updateRoom
+    socket.emit("joinRoom", { roomId, name: adminName });
+
     socket.on("updateRoom", (data) => {
       setRoom(data);
       const player = data.players.find((p: any) => p.id === socket.id);
       setMe(player);
     });
+
+    socket.on("errorMsg", (msg) => alert(msg));
+
     return () => {
       socket.off("updateRoom");
+      socket.off("errorMsg");
     };
   }, []);
 
@@ -21,7 +31,7 @@ export default function GamePage() {
 
   return (
     <div style={styles.container}>
-      <h2>Game Room</h2>
+      <h2>Game Room (Admin)</h2>
       <p>
         <strong>Phase:</strong> {room.phase}
       </p>
@@ -30,10 +40,7 @@ export default function GamePage() {
       <ul style={styles.list}>
         {room.players.map((p: any) => (
           <li key={p.id}>
-            {p.name} — {p.alive ? "Alive" : "Dead"}
-            {p.id === socket.id && p.role && (
-              <strong> (You are {p.role})</strong>
-            )}
+            {p.name} — {p.role} — {p.alive ? "Alive" : "Dead"}
           </li>
         ))}
       </ul>
