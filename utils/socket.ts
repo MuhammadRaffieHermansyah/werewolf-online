@@ -1,21 +1,29 @@
 import { io, Socket } from "socket.io-client";
 
+export interface Room {
+  admin: string | null;
+  players: { id: string; name: string; alive: boolean; role: string | null }[];
+  phase: "waiting" | "day" | "night" | "ended";
+  log: string[];
+  votes: Record<string, string>;
+  nightActions: Record<string, { player: string; name: string; role: string; target: string }>;
+}
+
 interface ServerToClientEvents {
-    updateRoom: (roomData: any) => void;
-    errorMsg: (msg: string) => void;
+  updateRoom: (roomData: Room) => void;
+  errorMsg: (msg: string) => void;
 }
 
 interface ClientToServerEvents {
-    createRoom: (data: { roomId: string; name: string }) => void;
-    joinRoom: (data: { roomId: string; name: string }) => void;
-    startGame: (roomId: string) => void;
-    vote: (data: { roomId: string; target: string }) => void;
+  createRoom: (data: { roomId: string; name: string }) => void;
+  joinRoom: (data: { roomId: string; name: string }) => void;
+  startGame: (data: { roomId: string }) => void;
+  nextPhase: (data: { roomId: string }) => void;
+  vote: (data: { roomId: string; target: string }) => void;
+  nightAction: (data: { roomId: string; target: string }) => void;
 }
 
-// Pastikan URL sesuai dengan backend kamu
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-    "https://anthracitic-drake-interprovincial.ngrok-free.dev",
-    {
-        transports: ["websocket"], // lebih stabil di dev mode
-    }
+  "https://anthracitic-drake-interprovincial.ngrok-free.dev",
+  { transports: ["websocket"] }
 );

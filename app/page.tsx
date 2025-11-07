@@ -19,6 +19,7 @@ export default function HomePage() {
     localStorage.setItem("role", "admin");
     localStorage.setItem("roomId", roomId);
     localStorage.setItem("name", name);
+    socket.emit("createRoom", { roomId, name });
     window.location.href = "/admin";
   };
 
@@ -27,13 +28,14 @@ export default function HomePage() {
     localStorage.setItem("role", "player");
     localStorage.setItem("roomId", roomId);
     localStorage.setItem("name", name);
+    socket.emit("joinRoom", { roomId, name });
     window.location.href = "/game";
   };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>🐺 WEREWOLF ONLINE</h1>
       <div style={styles.card}>
+        <h1 style={styles.title}>🐺 Werewolf Online</h1>
         <input
           placeholder="Nama kamu"
           onChange={(e) => setName(e.target.value)}
@@ -44,7 +46,7 @@ export default function HomePage() {
           onChange={(e) => setRoomId(e.target.value)}
           style={styles.input}
         />
-        <div style={{ marginTop: 20 }}>
+        <div>
           <button style={styles.btnPrimary} onClick={createRoom}>
             Create Room (Admin)
           </button>
@@ -58,34 +60,35 @@ export default function HomePage() {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+// styles sama seperti sebelumnya
+
+const styles = {
   container: {
     background: "linear-gradient(135deg, #1a0029, #000)",
     color: "#fff",
     height: "100vh",
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     fontFamily: "Poppins, sans-serif",
   },
   card: {
-    background: "rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.05)",
     padding: "30px 50px",
     borderRadius: "15px",
-    boxShadow: "0 0 25px rgba(255,0,255,0.3)",
-    textAlign: "center",
+    boxShadow: "0 0 20px rgba(255,0,255,0.3)",
+    textAlign: "center" as const,
   },
   title: {
-    fontSize: "2.5rem",
+    fontSize: "2rem",
     marginBottom: "30px",
-    textShadow: "0 0 25px #ff00ff",
+    textShadow: "0 0 20px #ff00ff",
   },
   input: {
     display: "block",
     margin: "10px auto",
     padding: "10px 14px",
-    width: "260px",
+    width: "250px",
     borderRadius: 8,
     border: "1px solid #555",
     background: "#222",

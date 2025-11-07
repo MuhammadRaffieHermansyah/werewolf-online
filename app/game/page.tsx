@@ -1,15 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
-import { socket } from "../../utils/socket";
+import { socket, Room } from "../../utils/socket";
 
 export default function GamePage() {
-  const [room, setRoom] = useState<any>(null);
-  const [me, setMe] = useState<any>(null);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [me, setMe] = useState<{
+    id: string;
+    name: string;
+    alive: boolean;
+    role: string | null;
+  } | null>(null);
   const [roomId, setRoomId] = useState("");
   const [name, setName] = useState("");
 
   useEffect(() => {
-    // Hindari error SSR: hanya ambil localStorage di client
     if (typeof window !== "undefined") {
       const savedRoom = localStorage.getItem("roomId") || "";
       const savedName = localStorage.getItem("name") || "";
@@ -21,9 +25,11 @@ export default function GamePage() {
       }
     }
 
-    socket.on("updateRoom", (data) => {
+    socket.on("updateRoom", (data: Room) => {
       setRoom(data);
-      setMe(data.players.find((p: any) => p.id === socket.id));
+      const currentPlayer =
+        data.players.find((p) => p.id === socket.id) || null;
+      setMe(currentPlayer);
     });
 
     socket.on("errorMsg", (msg) => alert(msg));
@@ -38,6 +44,10 @@ export default function GamePage() {
 
   const handleVote = (target: string) => {
     socket.emit("vote", { roomId, target });
+  };
+
+  const handleNightAction = (target: string) => {
+    socket.emit("nightAction", { roomId, target });
   };
 
   return (
@@ -59,7 +69,7 @@ export default function GamePage() {
 
       <h3>Pemain</h3>
       <ul style={styles.list}>
-        {room.players.map((p: any) => (
+        {room.players.map((p) => (
           <li key={p.id} style={{ marginBottom: 6 }}>
             {p.name} — {p.alive ? "🟢 Hidup" : "🔴 Mati"}
           </li>
@@ -70,8 +80,8 @@ export default function GamePage() {
         <>
           <h3>🗳️ Pilih siapa yang kamu curigai!</h3>
           {room.players
-            .filter((p: any) => p.alive && p.id !== socket.id)
-            .map((p: any) => (
+            .filter((p) => p.alive && p.id !== socket.id)
+            .map((p) => (
               <button
                 key={p.id}
                 style={styles.voteBtn}
@@ -83,12 +93,31 @@ export default function GamePage() {
         </>
       )}
 
-      {room.phase === "night" && <p>🌌 Malam tiba... tunggu hasilnya.</p>}
+      {room.phase === "night" && me.alive && (
+        <>
+          <h3>🌌 Aksi Malam Kamu ({me.role})</h3>
+          {room.players
+            .filter((p) => p.alive && p.id !== socket.id)
+            .map((p) => (
+              <button
+                key={p.id}
+                style={styles.voteBtn}
+                onClick={() => handleNightAction(p.name)}
+              >
+                Target {p.name}
+              </button>
+            ))}
+        </>
+      )}
+
+      {room.phase === "night" && !me.alive && (
+        <p>🌌 Malam tiba... kamu sudah mati.</p>
+      )}
       {room.phase === "ended" && <p>🎉 Game selesai! {room.log.at(-1)}</p>}
 
       <h3 style={styles.subTitle}>📜 Log</h3>
       <ul style={styles.log}>
-        {room.log.map((l: string, i: number) => (
+        {room.log.map((l, i) => (
           <li key={i}>{l}</li>
         ))}
       </ul>
@@ -102,7 +131,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: "linear-gradient(135deg,#0a0014,#1a0029)",
     minHeight: "100vh",
     padding: 30,
-    fontFamily: "Poppins, sans-serif",
+    fontFamily: "Poppins,sans-serif",
     textAlign: "center",
   },
   title: {

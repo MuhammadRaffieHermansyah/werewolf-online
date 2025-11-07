@@ -1,64 +1,83 @@
 "use client";
 import { useEffect, useState } from "react";
-import { socket } from "../../utils/socket";
+import { socket, Room } from "../../utils/socket";
 
 export default function AdminPage() {
-  const [room, setRoom] = useState<any>(null);
-  const [roomId, setRoomId] = useState("");
-  const [name, setName] = useState("");
+  const [room, setRoom] = useState<Room | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // cek kalau window sudah tersedia (hanya di client)
-    if (typeof window !== "undefined") {
-      const savedRoom = localStorage.getItem("roomId") || "";
-      const savedName = localStorage.getItem("name") || "";
-      setRoomId(savedRoom);
-      setName(savedName);
+    if (typeof window === "undefined") return;
+    const roomId = localStorage.getItem("roomId");
+    const name = localStorage.getItem("name");
+    if (!roomId || !name) return;
 
-      if (savedRoom && savedName) {
-        socket.emit("createRoom", { roomId: savedRoom, name: savedName });
-      }
-    }
+    socket.emit("joinRoom", { roomId, name });
 
-    socket.on("updateRoom", (data) => setRoom(data));
-    socket.on("errorMsg", (msg) => alert(msg));
+    socket.on("updateRoom", (data: Room) => {
+      setRoom(data);
+      setLoading(false);
+    });
 
     return () => {
       socket.off("updateRoom");
-      socket.off("errorMsg");
     };
   }, []);
 
-  if (!room) return <p style={styles.wait}>Menunggu data room...</p>;
+  const startGame = () => {
+    const roomId = localStorage.getItem("roomId");
+    if (!roomId) return;
+    socket.emit("startGame", { roomId });
+  };
+
+  const nextPhase = () => {
+    const roomId = localStorage.getItem("roomId");
+    if (!roomId) return;
+    socket.emit("nextPhase", { roomId });
+  };
+
+  if (loading || !room)
+    return (
+      <p style={{ color: "#fff", textAlign: "center" }}>Menunggu pemain...</p>
+    );
 
   return (
     <div style={styles.container}>
-      <h2>👑 Admin Panel</h2>
-      <h3>
-        Room ID: <span style={{ color: "#b517ff" }}>{roomId}</span>
-      </h3>
+      <h2 style={styles.title}>🧙 Admin Panel</h2>
+      <p>
+        Room ID: <b>{localStorage.getItem("roomId")}</b>
+      </p>
 
-      <ul style={styles.list}>
-        {room.players.map((p: any) => (
-          <li key={p.id}>
-            <b>{p.name}</b> — {p.role || "Belum ada peran"} —{" "}
-            {p.alive ? "🟢 Hidup" : "🔴 Mati"}
+      <div>
+        <button style={styles.btnPrimary} onClick={startGame}>
+          🎮 Start Game
+        </button>
+        <button style={styles.btnSecondary} onClick={nextPhase}>
+          ⏭️ Next Phase
+        </button>
+      </div>
+
+      <h3 style={styles.subTitle}>👥 Daftar Pemain</h3>
+      <ul style={styles.playerList}>
+        {room.players.map((p) => (
+          <li key={p.id} style={styles.playerItem}>
+            {p.name} — {p.role || "Belum dibagikan"} {p.alive ? "🟢" : "🔴"}
           </li>
         ))}
       </ul>
 
-      {room.phase === "lobby" && (
-        <button
-          style={styles.btn}
-          onClick={() => socket.emit("startGame", roomId)}
-        >
-          🚀 Mulai Game
-        </button>
-      )}
+      <h3 style={styles.subTitle}>🌙 Night Actions</h3>
+      <ul style={styles.playerList}>
+        {Object.values(room.nightActions).map((a, i) => (
+          <li key={i} style={styles.playerItem}>
+            {a.name} ({a.role}) → {a.target}
+          </li>
+        ))}
+      </ul>
 
-      <h3>📜 Game Log</h3>
+      <h3 style={styles.subTitle}>📜 Log</h3>
       <ul style={styles.log}>
-        {room.log.map((l: string, i: number) => (
+        {room.log.map((l, i) => (
           <li key={i}>{l}</li>
         ))}
       </ul>
@@ -69,22 +88,37 @@ export default function AdminPage() {
 const styles = {
   container: {
     color: "#fff",
-    background: "linear-gradient(135deg,#000,#1a0029)",
+    background: "linear-gradient(135deg,#0a0014,#1a0029)",
     minHeight: "100vh",
-    padding: "30px",
+    padding: 30,
     fontFamily: "Poppins,sans-serif",
   },
-  wait: { color: "#fff", textAlign: "center" as const, marginTop: 100 },
-  btn: {
-    marginTop: 15,
+  title: { fontSize: "1.8rem", textShadow: "0 0 20px #b517ff" },
+  subTitle: { marginTop: 25 },
+  playerList: { listStyle: "none", padding: 0 },
+  playerItem: {
+    background: "rgba(255,255,255,0.05)",
+    margin: "5px 0",
+    padding: "8px 12px",
+    borderRadius: 8,
+  },
+  btnPrimary: {
     background: "#b517ff",
     border: "none",
     padding: "10px 20px",
     borderRadius: 8,
-    color: "#fff",
     cursor: "pointer",
+    color: "#fff",
+    margin: "10px",
   },
-  list: { listStyle: "none", padding: 0, marginBottom: 20 },
+  btnSecondary: {
+    background: "#333",
+    border: "1px solid #b517ff",
+    padding: "10px 20px",
+    borderRadius: 8,
+    cursor: "pointer",
+    color: "#fff",
+  },
   log: {
     background: "rgba(255,255,255,0.05)",
     borderRadius: 10,
