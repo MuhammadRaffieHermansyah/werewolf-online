@@ -2,23 +2,22 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../utils/socket";
 
-export default function GamePage() {
+export default function AdminPage() {
   const [room, setRoom] = useState<any>(null);
-  const [me, setMe] = useState<any>(null);
-
-  const roomId = "room1"; // <- sesuaikan dengan room yang ada
-  const adminName = "Admin"; // nama unik untuk admin
+  const [roomId, setRoomId] = useState("room1"); // default room id
+  const [name, setName] = useState("Admin"); // nama admin kamu
 
   useEffect(() => {
-    // 🚀 ini penting: admin ikut join agar dapat updateRoom
-    socket.emit("joinRoom", { roomId, name: adminName });
+    // saat pertama connect, admin create room
+    socket.emit("createRoom", { roomId, name });
 
+    // dengarkan updateRoom
     socket.on("updateRoom", (data) => {
+      console.log("Update room data:", data);
       setRoom(data);
-      const player = data.players.find((p: any) => p.id === socket.id);
-      setMe(player);
     });
 
+    // error message
     socket.on("errorMsg", (msg) => alert(msg));
 
     return () => {
@@ -27,26 +26,30 @@ export default function GamePage() {
     };
   }, []);
 
-  if (!room || !me) return <p>Menunggu data room...</p>;
+  if (!room) return <p>Menunggu data room...</p>;
 
   return (
-    <div style={styles.container}>
-      <h2>Game Room (Admin)</h2>
-      <p>
-        <strong>Phase:</strong> {room.phase}
-      </p>
+    <div style={{ padding: 20 }}>
+      <h2>Admin Panel</h2>
+      <h3>Room ID: {roomId}</h3>
 
-      <h3>Players</h3>
-      <ul style={styles.list}>
+      <ul>
         {room.players.map((p: any) => (
           <li key={p.id}>
-            {p.name} — {p.role} — {p.alive ? "Alive" : "Dead"}
+            {p.name} — {p.role || "No role yet"} — {p.alive ? "Alive" : "Dead"}
           </li>
         ))}
       </ul>
 
-      <h3>Game Log</h3>
-      <ul style={styles.log}>
+      <button
+        onClick={() => socket.emit("startGame", roomId)}
+        disabled={room.phase !== "lobby"}
+      >
+        Mulai Game
+      </button>
+
+      <h3>Log Game</h3>
+      <ul>
         {room.log.map((l: string, i: number) => (
           <li key={i}>{l}</li>
         ))}
@@ -54,16 +57,3 @@ export default function GamePage() {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    maxWidth: 600,
-    margin: "auto",
-    padding: 20,
-    background: "#fafafa",
-    borderRadius: 8,
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-  },
-  list: { listStyle: "none", padding: 0 },
-  log: { background: "#eee", padding: 10, borderRadius: 6, listStyle: "none" },
-};
