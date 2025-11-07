@@ -8,9 +8,11 @@ export default function HomePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    socket.on("errorMsg", (msg) => setError(msg));
-    return () => socket.off("errorMsg");
-  }, []);
+    socket.on("errorMsg", (msg: string) => setError(msg));
+    return () => {
+      socket.off("errorMsg");
+    };
+  }, [setError]);
 
   const createRoom = () => {
     if (!roomId || !name) return setError("Isi nama dan ID room dulu!");
