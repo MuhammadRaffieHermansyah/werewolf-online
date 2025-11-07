@@ -5,13 +5,31 @@ import { socket } from "../../utils/socket";
 export default function GamePage() {
   const [room, setRoom] = useState<any>(null);
   const [me, setMe] = useState<any>(null);
-
-  const roomId = "room1"; // ID unik room
-  const adminName = "Admin"; // nama admin
+  const [roomId, setRoomId] = useState("");
+  const [name, setName] = useState("");
 
   useEffect(() => {
-    // 🟢 Admin CREATE ROOM, bukan join
-    socket.emit("createRoom", { roomId, name: adminName });
+    const storedRole = localStorage.getItem("role");
+    if (storedRole !== "player") {
+      alert("Kamu bukan player!");
+      window.location.href = "/";
+      return;
+    }
+
+    const storedRoomId = localStorage.getItem("roomId");
+    const storedName = localStorage.getItem("name");
+
+    if (!storedRoomId || !storedName) {
+      alert("Data tidak lengkap. Kembali ke halaman awal.");
+      window.location.href = "/";
+      return;
+    }
+
+    setRoomId(storedRoomId);
+    setName(storedName);
+
+    // 🔵 Join ke room
+    socket.emit("joinRoom", { roomId: storedRoomId, name: storedName });
 
     socket.on("updateRoom", (data) => {
       setRoom(data);
@@ -31,29 +49,21 @@ export default function GamePage() {
 
   return (
     <div style={styles.container}>
-      <h2>Game Room (Admin)</h2>
+      <h2>Game Room</h2>
       <p>
-        <strong>Phase:</strong> {room.phase}
+        <strong>Nama:</strong> {me.name} <br />
+        <strong>Role:</strong> {me.role ?? "Belum dibagikan"} <br />
+        <strong>Status:</strong> {me.alive ? "Alive" : "Dead"}
       </p>
 
-      <h3>Players</h3>
+      <h3>Daftar Pemain</h3>
       <ul style={styles.list}>
         {room.players.map((p: any) => (
           <li key={p.id}>
-            {p.name} — {p.role ?? "Belum ada role"} —{" "}
-            {p.alive ? "Alive" : "Dead"}
+            {p.name} — {p.alive ? "Alive" : "Dead"}
           </li>
         ))}
       </ul>
-
-      {room.phase === "lobby" && (
-        <button
-          onClick={() => socket.emit("startGame", roomId)}
-          style={styles.button}
-        >
-          Mulai Game
-        </button>
-      )}
 
       <h3>Game Log</h3>
       <ul style={styles.log}>
@@ -76,13 +86,4 @@ const styles = {
   },
   list: { listStyle: "none", padding: 0 },
   log: { background: "#eee", padding: 10, borderRadius: 6, listStyle: "none" },
-  button: {
-    padding: "10px 20px",
-    background: "#0070f3",
-    color: "#fff",
-    border: "none",
-    borderRadius: 5,
-    cursor: "pointer",
-    marginTop: 10,
-  },
 };

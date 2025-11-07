@@ -9,18 +9,23 @@ export default function HomePage() {
 
   useEffect(() => {
     socket.on("errorMsg", (msg) => setError(msg));
-    return () => {
-      socket.off("errorMsg");
-    };
+    return () => socket.off("errorMsg");
   }, []);
 
   const createRoom = () => {
-    socket.emit("createRoom", { roomId, name });
+    if (!roomId || !name) return setError("Isi nama dan ID room dulu!");
+    // simpan ke localStorage
+    localStorage.setItem("role", "admin");
+    localStorage.setItem("roomId", roomId);
+    localStorage.setItem("name", name);
     window.location.href = "/admin";
   };
 
   const joinRoom = () => {
-    socket.emit("joinRoom", { roomId, name });
+    if (!roomId || !name) return setError("Isi nama dan ID room dulu!");
+    localStorage.setItem("role", "player");
+    localStorage.setItem("roomId", roomId);
+    localStorage.setItem("name", name);
     window.location.href = "/game";
   };
 

@@ -4,20 +4,27 @@ import { socket } from "../../utils/socket";
 
 export default function AdminPage() {
   const [room, setRoom] = useState<any>(null);
-  const [roomId, setRoomId] = useState("room1"); // default room id
-  const [name, setName] = useState("Admin"); // nama admin kamu
+  const [roomId, setRoomId] = useState("");
+  const [name, setName] = useState("");
 
   useEffect(() => {
-    // saat pertama connect, admin create room
-    socket.emit("createRoom", { roomId, name });
+    const storedRole = localStorage.getItem("role");
+    if (storedRole !== "admin") {
+      alert("Kamu bukan admin!");
+      window.location.href = "/";
+      return;
+    }
 
-    // dengarkan updateRoom
-    socket.on("updateRoom", (data) => {
-      console.log("Update room data:", data);
-      setRoom(data);
-    });
+    const storedRoomId = localStorage.getItem("roomId") || "room1";
+    const storedName = localStorage.getItem("name") || "Admin";
 
-    // error message
+    setRoomId(storedRoomId);
+    setName(storedName);
+
+    // 🔥 Buat room hanya sekali
+    socket.emit("createRoom", { roomId: storedRoomId, name: storedName });
+
+    socket.on("updateRoom", (data) => setRoom(data));
     socket.on("errorMsg", (msg) => alert(msg));
 
     return () => {
@@ -36,7 +43,7 @@ export default function AdminPage() {
       <ul>
         {room.players.map((p: any) => (
           <li key={p.id}>
-            {p.name} — {p.role || "No role yet"} — {p.alive ? "Alive" : "Dead"}
+            {p.name} — {p.role || "Belum ada role"} — {p.alive ? "Alive" : "Dead"}
           </li>
         ))}
       </ul>
@@ -48,7 +55,7 @@ export default function AdminPage() {
         Mulai Game
       </button>
 
-      <h3>Log Game</h3>
+      <h3>Game Log</h3>
       <ul>
         {room.log.map((l: string, i: number) => (
           <li key={i}>{l}</li>
