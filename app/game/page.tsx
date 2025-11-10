@@ -1,15 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { socket, Room } from "../../utils/socket";
+import { socket, Room, Player } from "../../utils/socket";
 
 export default function GamePage() {
   const [room, setRoom] = useState<Room | null>(null);
-  const [me, setMe] = useState<{
-    id: string;
-    name: string;
-    alive: boolean;
-    role: string | null;
-  } | null>(null);
+  const [me, setMe] = useState<Player | null>(null);
   const [roomId, setRoomId] = useState("");
   const [name, setName] = useState("");
 
@@ -27,8 +22,7 @@ export default function GamePage() {
 
     socket.on("updateRoom", (data: Room) => {
       setRoom(data);
-      const currentPlayer =
-        data.players.find((p) => p.id === socket.id) || null;
+      const currentPlayer = data.players.find(p => p.id === socket.id) || null;
       setMe(currentPlayer);
     });
 
@@ -40,86 +34,32 @@ export default function GamePage() {
     };
   }, []);
 
-  if (!room || !me) return <p style={styles.wait}>Menunggu room dimulai...</p>;
+  if (!room || !me) return <p>Menunggu room dimulai...</p>;
 
-  const handleVote = (target: string) => {
-    socket.emit("vote", { roomId, target });
-  };
-
-  const handleNightAction = (target: string) => {
-    socket.emit("nightAction", { roomId, target });
-  };
+  const handleVote = (target: string) => socket.emit("vote", { roomId, target });
+  const handleNightAction = (target: string) => socket.emit("nightAction", { roomId, target });
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>🌙 WEREWOLF GAME</h2>
-      <h3 style={styles.roomInfo}>
-        Room ID: <span style={{ color: "#b517ff" }}>{roomId}</span>
-      </h3>
+    <div>
+      <h2>🌙 WEREWOLF GAME</h2>
+      <p>Phase: {room.phase}</p>
+      <p>Kamu: {me.name} — {me.role}</p>
 
-      <p>
-        <strong>Phase:</strong>{" "}
-        <span style={{ color: "#b517ff" }}>{room.phase}</span>
-      </p>
+      {room.phase === "day" && me.alive &&
+        room.players.filter(p => p.alive && p.id !== socket.id).map(p =>
+          <button key={p.id} onClick={() => handleVote(p.name)}>Vote {p.name}</button>
+        )
+      }
 
-      <p>
-        <strong>Kamu:</strong> {me.name} —{" "}
-        <span style={{ color: "#ff77ff" }}>{me.role}</span>
-      </p>
+      {room.phase === "night" && me.alive &&
+        room.players.filter(p => p.alive && p.id !== socket.id).map(p =>
+          <button key={p.id} onClick={() => handleNightAction(p.name)}>Target {p.name}</button>
+        )
+      }
 
-      <h3>Pemain</h3>
-      <ul style={styles.list}>
-        {room.players.map((p) => (
-          <li key={p.id} style={{ marginBottom: 6 }}>
-            {p.name} — {p.alive ? "🟢 Hidup" : "🔴 Mati"}
-          </li>
-        ))}
-      </ul>
-
-      {room.phase === "day" && me.alive && (
-        <>
-          <h3>🗳️ Pilih siapa yang kamu curigai!</h3>
-          {room.players
-            .filter((p) => p.alive && p.id !== socket.id)
-            .map((p) => (
-              <button
-                key={p.id}
-                style={styles.voteBtn}
-                onClick={() => handleVote(p.name)}
-              >
-                Vote {p.name}
-              </button>
-            ))}
-        </>
-      )}
-
-      {room.phase === "night" && me.alive && (
-        <>
-          <h3>🌌 Aksi Malam Kamu ({me.role})</h3>
-          {room.players
-            .filter((p) => p.alive && p.id !== socket.id)
-            .map((p) => (
-              <button
-                key={p.id}
-                style={styles.voteBtn}
-                onClick={() => handleNightAction(p.name)}
-              >
-                Target {p.name}
-              </button>
-            ))}
-        </>
-      )}
-
-      {room.phase === "night" && !me.alive && (
-        <p>🌌 Malam tiba... kamu sudah mati.</p>
-      )}
-      {room.phase === "ended" && <p>🎉 Game selesai! {room.log.at(-1)}</p>}
-
-      <h3 style={styles.subTitle}>📜 Log</h3>
-      <ul style={styles.log}>
-        {room.log.map((l, i) => (
-          <li key={i}>{l}</li>
-        ))}
+      <h3>Log:</h3>
+      <ul>
+        {room.log.map((l, i) => <li key={i}>{l}</li>)}
       </ul>
     </div>
   );

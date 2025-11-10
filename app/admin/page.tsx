@@ -7,14 +7,12 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const roomId = localStorage.getItem("roomId");
     const name = localStorage.getItem("name");
     if (!roomId || !name) return;
 
     socket.emit("joinRoom", { roomId, name });
-
-    socket.on("updateRoom", (data: Room) => {
+    socket.on("updateRoom", (data) => {
       setRoom(data);
       setLoading(false);
     });
@@ -26,35 +24,24 @@ export default function AdminPage() {
 
   const startGame = () => {
     const roomId = localStorage.getItem("roomId");
-    if (!roomId) return;
-    socket.emit("startGame", { roomId });
+    if (roomId) socket.emit("startGame", { roomId });
   };
 
   const nextPhase = () => {
     const roomId = localStorage.getItem("roomId");
-    if (!roomId) return;
-    socket.emit("nextPhase", { roomId });
+    if (roomId) socket.emit("nextPhase", { roomId });
   };
 
-  if (loading || !room)
-    return (
-      <p style={{ color: "#fff", textAlign: "center" }}>Menunggu pemain...</p>
-    );
+  if (loading || !room) return <p style={{ color: "#fff", textAlign: "center" }}>Menunggu pemain...</p>;
 
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>🧙 Admin Panel</h2>
-      <p>
-        Room ID: <b>{localStorage.getItem("roomId")}</b>
-      </p>
+      <p>Room ID: <b>{localStorage.getItem("roomId")}</b></p>
 
       <div>
-        <button style={styles.btnPrimary} onClick={startGame}>
-          🎮 Start Game
-        </button>
-        <button style={styles.btnSecondary} onClick={nextPhase}>
-          ⏭️ Next Phase
-        </button>
+        <button style={styles.btnPrimary} onClick={startGame}>🎮 Start Game</button>
+        <button style={styles.btnSecondary} onClick={nextPhase}>⏭️ Next Phase</button>
       </div>
 
       <h3 style={styles.subTitle}>👥 Daftar Pemain</h3>
@@ -66,20 +53,9 @@ export default function AdminPage() {
         ))}
       </ul>
 
-      <h3 style={styles.subTitle}>🌙 Night Actions</h3>
-      <ul style={styles.playerList}>
-        {Object.values(room.nightActions).map((a, i) => (
-          <li key={i} style={styles.playerItem}>
-            {a.name} ({a.role}) → {a.target}
-          </li>
-        ))}
-      </ul>
-
       <h3 style={styles.subTitle}>📜 Log</h3>
       <ul style={styles.log}>
-        {room.log.map((l, i) => (
-          <li key={i}>{l}</li>
-        ))}
+        {room.log.map((l, i) => <li key={i}>{l}</li>)}
       </ul>
     </div>
   );
