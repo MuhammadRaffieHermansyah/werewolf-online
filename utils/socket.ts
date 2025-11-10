@@ -1,12 +1,10 @@
 import { io, Socket } from "socket.io-client";
 
-// Event dari server ke client
 export interface ServerToClientEvents {
   updateRoom: (roomData: Room) => void;
   errorMsg: (msg: string) => void;
 }
 
-// Event dari client ke server
 export interface ClientToServerEvents {
   createRoom: (data: { roomId: string; name: string }) => void;
   joinRoom: (data: { roomId: string; name: string }) => void;
@@ -16,7 +14,6 @@ export interface ClientToServerEvents {
   nightAction: (data: { roomId: string; target: string }) => void;
 }
 
-// Definisi Player & Room
 export interface Player {
   id: string;
   name: string;
@@ -40,8 +37,7 @@ export interface Room {
   nightActions: Record<string, NightAction>;
 }
 
-// Socket ter-typed
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-  "http://localhost:3001", // ganti dengan URL backendmu
+  "http://10.10.182.200:3001", 
   { transports: ["websocket"] }
 );
