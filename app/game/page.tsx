@@ -22,7 +22,7 @@ export default function GamePage() {
 
     socket.on("updateRoom", (data: Room) => {
       setRoom(data);
-      const currentPlayer = data.players.find(p => p.id === socket.id) || null;
+      const currentPlayer = data.players.find((p) => p.id === socket.id) || null;
       setMe(currentPlayer);
     });
 
@@ -34,32 +34,56 @@ export default function GamePage() {
     };
   }, []);
 
-  if (!room || !me) return <p>Menunggu room dimulai...</p>;
+  if (!room || !me) return <p style={styles.wait}>Menunggu room dimulai...</p>;
 
   const handleVote = (target: string) => socket.emit("vote", { roomId, target });
   const handleNightAction = (target: string) => socket.emit("nightAction", { roomId, target });
 
   return (
-    <div>
-      <h2>🌙 WEREWOLF GAME</h2>
-      <p>Phase: {room.phase}</p>
-      <p>Kamu: {me.name} — {me.role}</p>
+    <div style={styles.container}>
+      <h2 style={styles.title}>🌙 WEREWOLF GAME</h2>
+      <p style={styles.roomInfo}>Phase: <b>{room.phase}</b></p>
+      <p style={styles.roomInfo}>Kamu: <b>{me.name}</b> — {me.role}</p>
 
-      {room.phase === "day" && me.alive &&
-        room.players.filter(p => p.alive && p.id !== socket.id).map(p =>
-          <button key={p.id} onClick={() => handleVote(p.name)}>Vote {p.name}</button>
-        )
-      }
+      {room.phase === "day" && me.alive && (
+        <>
+          <h3 style={styles.subTitle}>🗳️ Voting Siang</h3>
+          {room.players
+            .filter((p) => p.alive && p.id !== socket.id)
+            .map((p) => (
+              <button
+                key={p.id}
+                style={styles.voteBtn}
+                onClick={() => handleVote(p.name)}
+              >
+                Vote {p.name}
+              </button>
+            ))}
+        </>
+      )}
 
-      {room.phase === "night" && me.alive &&
-        room.players.filter(p => p.alive && p.id !== socket.id).map(p =>
-          <button key={p.id} onClick={() => handleNightAction(p.name)}>Target {p.name}</button>
-        )
-      }
+      {room.phase === "night" && me.alive && (
+        <>
+          <h3 style={styles.subTitle}>🌌 Aksi Malam</h3>
+          {room.players
+            .filter((p) => p.alive && p.id !== socket.id)
+            .map((p) => (
+              <button
+                key={p.id}
+                style={styles.voteBtn}
+                onClick={() => handleNightAction(p.name)}
+              >
+                Target {p.name}
+              </button>
+            ))}
+        </>
+      )}
 
-      <h3>Log:</h3>
-      <ul>
-        {room.log.map((l, i) => <li key={i}>{l}</li>)}
+      <h3 style={styles.subTitle}>📜 Log</h3>
+      <ul style={styles.log}>
+        {room.log.map((l, i) => (
+          <li key={i}>{l}</li>
+        ))}
       </ul>
     </div>
   );
@@ -80,7 +104,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   roomInfo: {
     fontWeight: "normal",
-    marginBottom: 25,
+    marginBottom: 15,
     color: "#ccc",
   },
   wait: {
@@ -88,20 +112,6 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "center",
     marginTop: 100,
     fontFamily: "Poppins, sans-serif",
-  },
-  list: {
-    listStyle: "none",
-    padding: 0,
-    marginBottom: 20,
-  },
-  log: {
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: 10,
-    padding: 15,
-    listStyle: "none",
-    textAlign: "left",
-    maxWidth: 400,
-    margin: "20px auto",
   },
   voteBtn: {
     margin: "5px",
@@ -113,6 +123,15 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontWeight: "bold",
     transition: "0.2s",
+  },
+  log: {
+    background: "rgba(255,255,255,0.05)",
+    borderRadius: 10,
+    padding: 15,
+    listStyle: "none",
+    textAlign: "left",
+    maxWidth: 400,
+    margin: "20px auto",
   },
   subTitle: {
     marginTop: 25,
