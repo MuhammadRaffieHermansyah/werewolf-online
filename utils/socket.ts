@@ -38,6 +38,6 @@ export interface Room {
 }
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-  "https://anthracitic-drake-interprovincial.ngrok-free.dev/", 
+  "http://localhost:3001", 
   { transports: ["websocket"] }
 );
